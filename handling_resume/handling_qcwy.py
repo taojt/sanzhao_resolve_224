@@ -117,6 +117,8 @@ def handlePersonInfo(resume, personInfo):
 						if len(ageInfos) >= 2:
 							if u"岁" in ageInfos[0]:
 								resume["age"] = ageInfos[0].replace(u"岁", "").strip()
+								if not re.match("\d+", resume["age"]):
+									resume["age"] = ""
 							if u"年" in ageInfos[1] and u"月" in ageInfos[1]:
 								birth = ageInfos[1].replace("）", "")
 								birth_info = re.match(u"(\d{4})年(\d{1,2})月(\d{1,2})日", birth)
@@ -136,6 +138,8 @@ def handlePersonInfo(resume, personInfo):
 					elif u"cm" in info:
 						height = info.strip()
 						resume["height"] = str(height).replace("cm", "")
+						if not re.match("\d+", resume["height"]):
+							resume["height"] = ""
 
 					elif u"工作经验" in info or u"应届毕业生" in info:
 						work_year = info.strip()
@@ -597,7 +601,7 @@ def handleProject(resume, tableInfo):
 
 # 培训经历
 def handleTrain(resume, tableInfo):
-	trainList = {"start_date": "", "end_date": "", "train_name": "", "train_school": "", "train_desc": "",
+	trainList = {"start_date": "", "end_date": "", "train_city": "", "train_name": "", "train_school": "", "train_desc": "",
 				 "train_certificate": ""}
 	trainElements = tableInfo.xpath(".//tr")
 	for trainEle in trainElements:

@@ -205,6 +205,8 @@ def handlePersonalInfo(resume, personInfo):
 					if len(temp) >= 1:
 						# 设置年龄
 						resume["age"] = temp[0].replace(u"岁", "")
+						if not re.match("\d+", resume["age"]):
+							resume["age"] = ""
 					if len(temp) >= 2:
 						# 设置生日
 						birth = temp[1][:-1]

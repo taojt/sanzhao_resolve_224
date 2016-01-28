@@ -98,6 +98,8 @@ def handling_yingcai(d={}):
 		# 年龄
 		if "age" in d["simple_resume"]:
 			resume["age"] = d["simple_resume"].get("age").replace(u"岁", "")
+			if not re.match("\d+", resume["age"]):
+				resume["age"] = ""
 
 		# 期望薪水
 		if "expSalary" in d["simple_resume"]:
@@ -136,6 +138,8 @@ def handling_yingcai(d={}):
 		if "height" in d["resume_detil"]:
 			resume["height"] = str(d["resume_detil"].get("height"))
 			if resume["height"] == "0":
+				resume["height"] = ""
+			if not re.match("\d+", resume["height"]):
 				resume["height"] = ""
 
 		# 婚姻状态
