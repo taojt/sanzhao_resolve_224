@@ -1,27 +1,23 @@
 # !/usr/bin/python
 # -*- coding:utf-8 -*-
 
-from handling_resume.handling_yingcai import handling_yingcai
 from convert_time import *
 from mongo_connect import *
 import logging
 import constant
 
-log = logging.getLogger("YingcaiThread")
+log = logging.getLogger("ImportThread")
 
 
-def test_yingcai(min_time, max_time):
+def test_import(min_time, max_time):
 	"""
 	导入解析英才简历方法
 	:param min_time:
 	:param max_time:
 	:return:
 	"""
-	src_conn = connect(database=constant.db_yingcai, collection=constant.db_yingcai_collection, host=constant.db_src_ip,
-					   port=constant.db_src_port,
-					   user=constant.db_src_user, password=constant.db_src_pass)
-	dest_conn = connect(database=constant.db_dest_db, collection=constant.db_dest_collection, host=constant.db_dest_ip,
-						port=constant.db_dest_port, user=constant.db_dest_user, password=constant.db_dest_pass)
+	src_conn = connect(database=constant.db_src_db, collection=constant.db_src_collection, host=constant.db_src_ip, port=constant.db_src_port, user=constant.db_src_user, password=constant.db_src_pass)
+	dest_conn = connect(database=constant.db_dest_db, collection=constant.db_dest_collection, host=constant.db_dest_ip, port=constant.db_dest_port, user=constant.db_dest_user, password=constant.db_dest_pass)
 	page = 0
 	page_size = 1000
 	temp = 0
@@ -37,6 +33,11 @@ def test_yingcai(min_time, max_time):
 	# 捕获mongo 连接超时 异常
 	except pymongo.errors.ServerSelectionTimeoutError, e:
 		log.error(u"统计英才简历条数错误，数据库连接超时， 异常信息： %s" % e.message)
+		# 暂停1小时再次检测连接是否正常
+		time.sleep(3600)
+		# 重新尝试简历连接
+		src_conn = connect(database=constant.db_src_db, collection=constant.db_src_collection, host=constant.db_src_ip, port=constant.db_src_port, user=constant.db_src_user, password=constant.db_src_pass)
+		dest_conn = connect(database=constant.db_dest_db, collection=constant.db_dest_collection, host=constant.db_dest_ip, port=constant.db_dest_port, user=constant.db_dest_user, password=constant.db_dest_pass)
 	except:
 		log.error(u"统计英才简历条数错误")
 
@@ -54,12 +55,8 @@ def test_yingcai(min_time, max_time):
 			# 暂停1小时再次检测连接是否正常
 			time.sleep(3600)
 			# 重新建立到数据库的连接
-			src_conn = connect(database=constant.db_yingcai, collection=constant.db_yingcai_collection,
-							   host=constant.db_src_ip, port=constant.db_src_port,
-							   user=constant.db_src_user, password=constant.db_src_pass)
-			dest_conn = connect(database=constant.db_dest_db, collection=constant.db_dest_collection,
-								host=constant.db_dest_ip, port=constant.db_dest_port, user=constant.db_dest_user,
-								password=constant.db_dest_pass)
+			src_conn = connect(database=constant.db_src_db, collection=constant.db_src_collection, host=constant.db_src_ip, port=constant.db_src_port, user=constant.db_src_user, password=constant.db_src_pass)
+			dest_conn = connect(database=constant.db_dest_db, collection=constant.db_dest_collection, host=constant.db_dest_ip, port=constant.db_dest_port, user=constant.db_dest_user, password=constant.db_dest_pass)
 			continue
 		except Exception, e:
 			log.error(u"读取数据出现异常， 异常信息： %s" % e.message)
@@ -69,9 +66,11 @@ def test_yingcai(min_time, max_time):
 		temp = 0
 		for d in db_cursor:
 			try:
-				resume = {}
-				resume = handling_yingcai(d)
+				resume = d
 				if resume != {}:
+					# 删除 _id
+					if "_id" in resume:
+						del resume["_id"]
 					cv_id = resume.get("cv_id")
 					source = resume.get("source")
 					if cv_id is None or source is None:
@@ -112,7 +111,7 @@ def test_yingcai(min_time, max_time):
 			temp += 1
 			all_temp += 1
 		end = datetime.datetime.now()
-		log.info(u"英才完成导入 %s 条数据，一共耗时 %d 秒 ！" % (all_temp, (end - start).seconds))
+		log.info(u"备份完成导入 %s 条数据，一共耗时 %d 秒 ！" % (all_temp, (end - start).seconds))
 		# 判断是否是已经读取完数据，因为是分页查询的，每页1000条数据，若不满1000条则是最后的数据
 		if temp % page_size != 0 or temp == 0:
 			log.info(u"---------- 英才已经导入所有数据")
